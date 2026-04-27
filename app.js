@@ -35,6 +35,8 @@ let html5QrCode   = null;      // scanner instance
 let scannerActive = false;
 let lastSaleData  = null;      // for ticket generation
 let stockUnsubscribe = null;   // realtime listener
+let stockHtml5QrCode   = null; // stock tab scanner instance
+let stockScannerActive = false;
 
 // ════════════════════════════════════════════════════
 //   UTILITIES
@@ -133,7 +135,8 @@ function switchTab(tabId) {
   document.querySelectorAll('.mob-nav').forEach(b => b.classList.remove('active-mob-nav'));
   document.querySelector(`.mob-nav[data-tab="${tabId}"]`)?.classList.add('active-mob-nav');
 
-  if (tabId !== 'pos') stopScanner();
+  if (tabId !== 'pos')   stopScanner();
+  if (tabId !== 'stock') stopStockScanner();
   if (tabId === 'dashboard') loadDashboard();
   if (tabId === 'cierre')    loadCierreHistorial();
   if (tabId === 'stock')     loadStockList();
@@ -251,14 +254,15 @@ async function addProductToCartByBarcode(barcode) {
 
 // ── Quick Add Modal ──────────────────────────────────
 function openQuickAddModal(barcode) {
-  document.getElementById('qaBarcode').value  = barcode;
-  document.getElementById('qaName').value     = '';
-  document.getElementById('qaSection').value  = '';
-  document.getElementById('qaBrand').value    = '';
-  document.getElementById('qaPrice').value    = '';
-  document.getElementById('qaStock').value    = '';
-  document.getElementById('qaMsg').textContent = '';
-  document.getElementById('qaAddToCart').checked = true;
+  document.getElementById('qaBarcode').value       = barcode;
+  document.getElementById('qaBarcodeDisplay').textContent = barcode;
+  document.getElementById('qaName').value          = '';
+  document.getElementById('qaSection').value       = '';
+  document.getElementById('qaBrand').value         = '';
+  document.getElementById('qaPrice').value         = '';
+  document.getElementById('qaStock').value         = '';
+  document.getElementById('qaMsg').textContent     = '';
+  document.getElementById('qaAddToCart').checked   = true;
   openModal('modalQuickAdd');
   setTimeout(() => document.getElementById('qaName').focus(), 100);
 }
@@ -901,6 +905,56 @@ function closeModal(id) {
     if (e.target.id === id) closeModal(id);
   });
 });
+
+// ════════════════════════════════════════════════════
+//   STOCK TAB — BARCODE SCANNER
+// ════════════════════════════════════════════════════
+
+async function startStockScanner() {
+  if (stockScannerActive) return;
+  const wrap = document.getElementById('stock-qr-reader-wrap');
+  const statusEl = document.getElementById('stockScanStatus');
+  try {
+    stockHtml5QrCode = new Html5Qrcode('stock-qr-reader');
+    const cameras = await Html5Qrcode.getCameras();
+    if (!cameras.length) { toast('No se encontró cámara', 'error'); return; }
+
+    const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
+
+    wrap.classList.remove('hidden');
+    await stockHtml5QrCode.start(
+      cam.id,
+      { fps: 10, qrbox: { width: 220, height: 120 }, aspectRatio: 1.5 },
+      (code) => {
+        if (!code) return;
+        document.getElementById('prodBarcode').value = code;
+        statusEl.textContent = `✅ Código: ${code}`;
+        stopStockScanner();
+        setTimeout(() => document.getElementById('prodName').focus(), 200);
+      },
+      () => {}
+    );
+    stockScannerActive = true;
+    statusEl.textContent = '📡 Escáner activo — apuntá al código';
+  } catch (e) {
+    wrap.classList.add('hidden');
+    toast(`Error de cámara: ${e.message || e}`, 'error');
+  }
+}
+
+async function stopStockScanner() {
+  if (!stockScannerActive || !stockHtml5QrCode) return;
+  try {
+    await stockHtml5QrCode.stop();
+    stockHtml5QrCode.clear();
+  } catch (_) {}
+  stockScannerActive = false;
+  stockHtml5QrCode   = null;
+  document.getElementById('stock-qr-reader-wrap').classList.add('hidden');
+}
+
+document.getElementById('btnStockScan').addEventListener('click', startStockScanner);
+document.getElementById('btnStockStopScan').addEventListener('click', stopStockScanner);
 
 // ════════════════════════════════════════════════════
 //   INIT
