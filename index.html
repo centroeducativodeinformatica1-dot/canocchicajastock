@@ -1,282 +1,551 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Canocchi Stock</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Canocchi Store — POS System</title>
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f5f5f5;
-}
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#e8f0fe',
+              100: '#c6d9fc',
+              200: '#93b8fa',
+              300: '#5a90f7',
+              400: '#2d6ef4',
+              500: '#1a56e8',
+              600: '#1240c4',
+              700: '#0d2f9a',
+              800: '#081f6e',
+              900: '#040f3a',
+            },
+            surface: {
+              900: '#0a0e1a',
+              800: '#111827',
+              700: '#1a2236',
+              600: '#232d45',
+              500: '#2d3a54',
+              400: '#3d4f6e',
+            },
+          },
+          fontFamily: {
+            display: ['"Exo 2"', 'sans-serif'],
+            body:    ['"DM Sans"', 'sans-serif'],
+            mono:    ['"JetBrains Mono"', 'monospace'],
+          },
+          boxShadow: {
+            'glow-blue': '0 0 24px rgba(45,110,244,0.35)',
+            'glow-sm':   '0 0 10px rgba(45,110,244,0.2)',
+          },
+        }
+      }
+    }
+  </script>
 
-/* LOGIN */
-#login {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-}
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
-#login img {
-  width: 180px;
-  margin-bottom: 20px;
-}
+  <!-- html5-qrcode -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-input {
-  padding: 10px;
-  margin: 5px;
-  width: 220px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
+  <!-- qrcode.js para el ticket -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-button {
-  padding: 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.btn-rojo {
-  background: #d60000;
-  color: white;
-}
-
-#loading {
-  margin-top: 10px;
-  color: #d60000;
-  display: none;
-}
-
-/* APP */
-#app {
-  display: none;
-  padding: 20px;
-}
-
-h1 {
-  color: #d60000;
-}
-
-.seccion {
-  background: white;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 15px;
-}
-
-.producto {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px;
-  border-bottom: 1px solid #eee;
-}
-
-.stock-bajo { color: orange; }
-.stock-critico { color: red; font-weight: bold; }
-
-img.icon {
-  width: 20px;
-  height: 20px;
-}
-
-/* Excel button */
-#excelBtn {
-  margin: 10px 0;
-  background: none;
-}
-
-/* NOTI */
-#noti {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #d60000;
-  color: white;
-  padding: 10px;
-  border-radius: 8px;
-  display: none;
-}
-</style>
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css" />
 </head>
 
-<body>
+<body class="bg-surface-900 text-white font-body min-h-screen">
 
-<!-- LOGIN -->
-<div id="login">
-  <img src="CanocchiLogo.PNG">
-  <input id="user" placeholder="Usuario">
-  <input id="pass" type="password" placeholder="Contraseña">
-  <button class="btn-rojo" onclick="login()">Iniciar sesión</button>
-  <div id="loading">Cargando...</div>
+<!-- ══════════════════════════════════════════════
+     PANTALLA DE LOGIN
+══════════════════════════════════════════════ -->
+<div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-50 bg-surface-900">
+  <div class="login-card relative w-full max-w-md mx-4 p-8 rounded-2xl border border-surface-600 bg-surface-800 shadow-glow-blue">
+
+    <!-- Logo / Brand -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-brand-600 shadow-glow-blue mb-4">
+        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17
+               m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+      </div>
+      <h1 class="font-display text-3xl font-900 tracking-tight text-white">Canocchi Store</h1>
+      <p class="text-surface-400 text-sm mt-1 font-mono">POINT OF SALE v2.0</p>
+    </div>
+
+    <!-- Form -->
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-600 text-brand-300 uppercase tracking-widest mb-1.5">Email</label>
+        <input id="loginEmail" type="email" placeholder="usuario@canocchi.com"
+          class="w-full bg-surface-700 border border-surface-500 rounded-xl px-4 py-3 text-white placeholder-surface-400
+                 focus:outline-none focus:border-brand-500 focus:shadow-glow-sm transition-all duration-200" />
+      </div>
+      <div>
+        <label class="block text-xs font-600 text-brand-300 uppercase tracking-widest mb-1.5">Contraseña</label>
+        <input id="loginPass" type="password" placeholder="••••••••"
+          class="w-full bg-surface-700 border border-surface-500 rounded-xl px-4 py-3 text-white placeholder-surface-400
+                 focus:outline-none focus:border-brand-500 focus:shadow-glow-sm transition-all duration-200" />
+      </div>
+      <button id="btnLogin"
+        class="w-full mt-2 bg-brand-600 hover:bg-brand-500 text-white font-display font-700 py-3.5 rounded-xl
+               transition-all duration-200 shadow-glow-blue hover:shadow-glow-blue active:scale-95 tracking-wide">
+        INGRESAR AL SISTEMA
+      </button>
+      <p id="loginError" class="text-red-400 text-sm text-center hidden"></p>
+    </div>
+  </div>
 </div>
 
-<!-- APP -->
-<div id="app">
-  <h1>Control de Stock</h1>
+<!-- ══════════════════════════════════════════════
+     APP PRINCIPAL (hidden until login)
+══════════════════════════════════════════════ -->
+<div id="appShell" class="hidden min-h-screen flex flex-col">
 
-  <input id="buscador" placeholder="Buscar por nombre, marca o código...">
+  <!-- ── TOP NAVBAR ── -->
+  <header class="sticky top-0 z-40 bg-surface-800 border-b border-surface-600 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center shadow-glow-sm">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17
+                 m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+        </div>
+        <span class="font-display font-700 text-lg tracking-tight">Canocchi <span class="text-brand-400">POS</span></span>
+      </div>
 
-  <button id="excelBtn" onclick="exportarExcel()">
-    <img src="logoexcel.png" style="width:26px;height:26px;">
-  </button>
+      <!-- Nav Pills -->
+      <nav class="hidden md:flex items-center gap-1 bg-surface-700 rounded-xl p-1">
+        <button data-tab="pos"      class="nav-btn active-nav px-4 py-1.5 rounded-lg text-sm font-600 transition-all">🛒 Venta</button>
+        <button data-tab="stock"    class="nav-btn px-4 py-1.5 rounded-lg text-sm font-600 transition-all">📦 Stock</button>
+        <button data-tab="dashboard" class="nav-btn px-4 py-1.5 rounded-lg text-sm font-600 transition-all">📊 Dashboard</button>
+        <button data-tab="cierre"   class="nav-btn px-4 py-1.5 rounded-lg text-sm font-600 transition-all">💼 Cierre</button>
+      </nav>
 
-  <div id="contenedor"></div>
-
-  <button class="btn-rojo" onclick="agregarSeccion()">+ Sección</button>
-</div>
-
-<div id="noti"></div>
-
-<script>
-// LOGIN
-function login() {
-  const u = document.getElementById("user").value;
-  const p = document.getElementById("pass").value;
-
-  document.getElementById("loading").style.display = "block";
-
-  setTimeout(() => {
-    if (u === "Cannochi" && p === "Guemes1194") {
-      document.getElementById("login").style.display = "none";
-      document.getElementById("app").style.display = "block";
-      render();
-    } else {
-      alert("Datos incorrectos");
-    }
-    document.getElementById("loading").style.display = "none";
-  }, 800);
-}
-
-// DATA (queda guardado SIEMPRE)
-let data = JSON.parse(localStorage.getItem("stock")) || {
-  "Golosinas": []
-};
-
-function save() {
-  localStorage.setItem("stock", JSON.stringify(data));
-}
-
-// RENDER
-function render() {
-  const cont = document.getElementById("contenedor");
-  cont.innerHTML = "";
-
-  Object.keys(data).sort().forEach(sec => {
-    const div = document.createElement("div");
-    div.className = "seccion";
-
-    div.innerHTML = <h2>${sec}</h2>;
-
-    data[sec].sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(p => {
-      let clase = "";
-      if (p.cantidad <= 2) clase = "stock-critico";
-      else if (p.cantidad <= 3) clase = "stock-bajo";
-
-      const el = document.createElement("div");
-      el.className = "producto";
-      el.innerHTML = `
-        <span class="${clase}">
-          ${p.nombre} (${p.marca || ""}) - ${p.cantidad}
-        </span>
-        <button onclick="delProd('${sec}','${p.nombre}')">
-          <img src="eliminar.png" class="icon">
+      <div class="flex items-center gap-3">
+        <span id="userEmail" class="hidden md:block text-xs text-surface-400 font-mono"></span>
+        <button id="btnLogout"
+          class="text-xs bg-surface-700 hover:bg-surface-600 border border-surface-500 px-3 py-1.5 rounded-lg transition-all">
+          Salir
         </button>
-      `;
+      </div>
+    </div>
+  </header>
 
-      if (p.cantidad <= 2) noti(p.nombre + " sin stock");
-      else if (p.cantidad === 3) noti(p.nombre + " bajo stock");
+  <!-- Mobile bottom nav -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-800 border-t border-surface-600 flex">
+    <button data-tab="pos"       class="mob-nav flex-1 py-3 flex flex-col items-center gap-0.5 text-xs active-mob-nav">
+      <span class="text-lg">🛒</span><span>Venta</span>
+    </button>
+    <button data-tab="stock"     class="mob-nav flex-1 py-3 flex flex-col items-center gap-0.5 text-xs">
+      <span class="text-lg">📦</span><span>Stock</span>
+    </button>
+    <button data-tab="dashboard" class="mob-nav flex-1 py-3 flex flex-col items-center gap-0.5 text-xs">
+      <span class="text-lg">📊</span><span>Stats</span>
+    </button>
+    <button data-tab="cierre"    class="mob-nav flex-1 py-3 flex flex-col items-center gap-0.5 text-xs">
+      <span class="text-lg">💼</span><span>Cierre</span>
+    </button>
+  </nav>
 
-      div.appendChild(el);
-    });
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-3 py-4 pb-24 md:pb-6">
 
-    const btn = document.createElement("button");
-    btn.innerHTML = <img src="agregar.png" class="icon">;
-    btn.onclick = () => addProd(sec);
+    <!-- ─────────────────────────────────
+         TAB: POS (Venta)
+    ───────────────────────────────── -->
+    <div id="tab-pos" class="tab-content">
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
-    div.appendChild(btn);
-    cont.appendChild(div);
-  });
-}
+        <!-- LEFT: Scanner + búsqueda manual -->
+        <div class="lg:col-span-3 space-y-4">
 
-// PRODUCTOS
-function addProd(sec) {
-  const nombre = prompt("Nombre:");
-  if (!nombre) return;
+          <!-- Scanner Card -->
+          <div class="card">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="section-title">📷 Escáner de Código</h2>
+              <div class="flex gap-2">
+                <button id="btnStartScan"
+                  class="btn-primary text-xs px-3 py-1.5">
+                  Activar Cámara
+                </button>
+                <button id="btnStopScan"
+                  class="btn-ghost text-xs px-3 py-1.5 hidden">
+                  Detener
+                </button>
+              </div>
+            </div>
 
-  const marca = prompt("Marca:");
-  const cant = parseInt(prompt("Cantidad (obligatoria):"));
-  if (isNaN(cant)) return alert("Cantidad inválida");
+            <div id="qr-reader" class="rounded-xl overflow-hidden bg-surface-700 min-h-[200px] flex items-center justify-center">
+              <div class="text-center text-surface-400 p-8">
+                <svg class="w-12 h-12 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01
+                       M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0
+                       001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1
+                       1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                </svg>
+                <p class="text-sm">Presioná "Activar Cámara" para escanear</p>
+                <p class="text-xs mt-1 opacity-60">O ingresá el código manualmente abajo</p>
+              </div>
+            </div>
 
-  const cod = prompt("Código de barras (opcional):");
+            <!-- Manual barcode input (also handles USB laser scanners) -->
+            <div class="mt-3 flex gap-2">
+              <input id="manualBarcode" type="text" placeholder="Código de barras (Enter para buscar)"
+                class="flex-1 bg-surface-700 border border-surface-500 rounded-xl px-4 py-2.5 text-white
+                       placeholder-surface-400 focus:outline-none focus:border-brand-500 transition-all font-mono text-sm" />
+              <button id="btnSearchBarcode" class="btn-primary px-4">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </button>
+            </div>
+            <p id="scanStatus" class="text-xs mt-2 text-center font-mono text-brand-400 min-h-[16px]"></p>
+          </div>
 
-  data[sec].push({nombre, marca, cantidad: cant, codigo: cod});
-  save();
-  render();
-}
+          <!-- Búsqueda por nombre -->
+          <div class="card">
+            <h2 class="section-title mb-3">🔍 Buscar Producto</h2>
+            <input id="searchProduct" type="text" placeholder="Nombre, marca o sección..."
+              class="w-full bg-surface-700 border border-surface-500 rounded-xl px-4 py-2.5 text-white
+                     placeholder-surface-400 focus:outline-none focus:border-brand-500 transition-all" />
+            <div id="searchResults" class="mt-2 space-y-2 max-h-64 overflow-y-auto custom-scroll"></div>
+          </div>
+        </div>
 
-function delProd(sec, nombre) {
-  data[sec] = data[sec].filter(p => p.nombre !== nombre);
-  save();
-  render();
-}
+        <!-- RIGHT: Carrito -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="card h-full flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="section-title">🛒 Carrito</h2>
+              <button id="btnClearCart" class="text-xs text-red-400 hover:text-red-300 transition-colors">
+                Vaciar
+              </button>
+            </div>
 
-// SECCION
-function agregarSeccion() {
-  const n = prompt("Nombre sección:");
-  if (!n) return;
+            <!-- Items del carrito -->
+            <div id="cartItems" class="flex-1 space-y-2 overflow-y-auto max-h-96 custom-scroll pr-1">
+              <div class="text-center text-surface-400 py-10">
+                <p class="text-4xl mb-2">🛒</p>
+                <p class="text-sm">El carrito está vacío</p>
+              </div>
+            </div>
 
-  data[n] = [];
-  save();
-  render();
-}
+            <!-- Totales -->
+            <div class="mt-4 pt-4 border-t border-surface-600 space-y-2">
+              <div class="flex justify-between text-sm text-surface-300">
+                <span>Subtotal</span>
+                <span id="cartSubtotal">$0.00</span>
+              </div>
+              <div class="flex justify-between text-sm text-surface-300">
+                <span>Ítems</span>
+                <span id="cartCount">0</span>
+              </div>
+              <div class="flex justify-between text-xl font-display font-700 text-white pt-2 border-t border-surface-600">
+                <span>TOTAL</span>
+                <span id="cartTotal" class="text-brand-400">$0.00</span>
+              </div>
+              <button id="btnPagar"
+                class="w-full mt-2 btn-primary py-4 text-lg font-display font-700 tracking-wide disabled:opacity-40
+                       disabled:cursor-not-allowed" disabled>
+                💳 PROCESAR PAGO
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-// BUSCADOR
-document.getElementById("buscador").addEventListener("input", e=>{
-  const v = e.target.value.toLowerCase();
-  document.querySelectorAll(".producto").forEach(p=>{
-    p.style.display = p.textContent.toLowerCase().includes(v) ? "flex" : "none";
-  });
-});
+    <!-- ─────────────────────────────────
+         TAB: STOCK
+    ───────────────────────────────── -->
+    <div id="tab-stock" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-// NOTIFICACION
-function noti(msg){
-  const n = document.getElementById("noti");
-  n.innerText = msg;
-  n.style.display = "block";
-  setTimeout(()=> n.style.display="none",2000);
-}
+        <!-- Formulario alta producto -->
+        <div class="card">
+          <h2 class="section-title mb-4">➕ Nuevo Producto</h2>
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="field-label">Código de Barras *</label>
+                <input id="prodBarcode" type="text" placeholder="7790001234567"
+                  class="field-input font-mono" />
+              </div>
+              <div>
+                <label class="field-label">Nombre *</label>
+                <input id="prodName" type="text" placeholder="Nombre del producto"
+                  class="field-input" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="field-label">Sección</label>
+                <input id="prodSection" type="text" placeholder="Electrónica, Ropa..."
+                  class="field-input" />
+              </div>
+              <div>
+                <label class="field-label">Marca</label>
+                <input id="prodBrand" type="text" placeholder="Marca"
+                  class="field-input" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="field-label">Precio ($) *</label>
+                <input id="prodPrice" type="number" step="0.01" placeholder="0.00"
+                  class="field-input font-mono" />
+              </div>
+              <div>
+                <label class="field-label">Stock Inicial *</label>
+                <input id="prodStock" type="number" placeholder="0"
+                  class="field-input font-mono" />
+              </div>
+            </div>
+            <button id="btnAddProduct" class="btn-primary w-full py-3 font-display font-700 mt-2">
+              GUARDAR PRODUCTO
+            </button>
+            <p id="stockMsg" class="text-sm text-center min-h-[18px] font-mono"></p>
+          </div>
+        </div>
 
-// EXPORTAR A EXCEL (CSV)
-function exportarExcel() {
-  let filas = [["Sección","Nombre","Marca","Cantidad","Código"]];
+        <!-- Lista de stock -->
+        <div class="card">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="section-title">📦 Inventario</h2>
+            <input id="filterStock" type="text" placeholder="Filtrar..."
+              class="bg-surface-700 border border-surface-500 rounded-lg px-3 py-1.5 text-sm text-white
+                     placeholder-surface-400 focus:outline-none focus:border-brand-500 transition-all w-32" />
+          </div>
+          <div id="stockList" class="space-y-2 max-h-[500px] overflow-y-auto custom-scroll pr-1">
+            <p class="text-surface-400 text-sm text-center py-8">Cargando inventario...</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  Object.keys(data).forEach(sec => {
-    data[sec].forEach(p => {
-      filas.push([
-        sec,
-        p.nombre,
-        p.marca || "",
-        p.cantidad,
-        p.codigo || ""
-      ]);
-    });
-  });
+    <!-- ─────────────────────────────────
+         TAB: DASHBOARD
+    ───────────────────────────────── -->
+    <div id="tab-dashboard" class="tab-content hidden">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="stat-card">
+          <p class="stat-label">Ventas Hoy</p>
+          <p id="statSalesToday" class="stat-value">$0</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Transacciones Hoy</p>
+          <p id="statTxToday" class="stat-value">0</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Ticket Promedio</p>
+          <p id="statAvgTicket" class="stat-value">$0</p>
+        </div>
+      </div>
 
-  let csv = filas.map(f => f.join(",")).join("\n");
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Top 5 productos -->
+        <div class="card">
+          <h2 class="section-title mb-4">🏆 Top 5 Productos Más Vendidos</h2>
+          <div id="rankingList" class="space-y-3">
+            <p class="text-surface-400 text-sm text-center py-8">Cargando ranking...</p>
+          </div>
+        </div>
 
-  let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  let url = URL.createObjectURL(blob);
+        <!-- Métodos de pago -->
+        <div class="card">
+          <h2 class="section-title mb-4">💳 Ventas por Método de Pago</h2>
+          <div id="paymentBreakdown" class="space-y-3">
+            <p class="text-surface-400 text-sm text-center py-8">Sin datos aún</p>
+          </div>
+        </div>
+      </div>
 
-  let a = document.createElement("a");
-  a.href = url;
-  a.download = "stock_canocchi.csv";
-  a.click();
-}
-</script>
+      <div class="mt-4 text-right">
+        <button id="btnRefreshDashboard" class="btn-ghost text-sm px-4 py-2">
+          🔄 Actualizar datos
+        </button>
+      </div>
+    </div>
+
+    <!-- ─────────────────────────────────
+         TAB: CIERRE DE CAJA
+    ───────────────────────────────── -->
+    <div id="tab-cierre" class="tab-content hidden">
+      <div class="max-w-2xl mx-auto">
+        <div class="card">
+          <h2 class="section-title mb-2">💼 Cierre de Caja</h2>
+          <p class="text-surface-400 text-sm mb-6">Generá el resumen del día y guardalo en el historial.</p>
+
+          <div id="cierrePreview" class="bg-surface-700 rounded-xl p-4 mb-4 space-y-3 font-mono text-sm">
+            <div class="flex justify-between border-b border-surface-600 pb-2 mb-3">
+              <span class="text-brand-400 font-600">RESUMEN DEL DÍA</span>
+              <span id="cierreFecha" class="text-surface-300"></span>
+            </div>
+            <div class="flex justify-between"><span class="text-surface-300">Total Ventas:</span><span id="cTotal" class="text-white">$0.00</span></div>
+            <div class="flex justify-between"><span class="text-surface-300">N° Transacciones:</span><span id="cTx" class="text-white">0</span></div>
+            <div class="flex justify-between"><span class="text-surface-300">Efectivo:</span><span id="cEfectivo" class="text-green-400">$0.00</span></div>
+            <div class="flex justify-between"><span class="text-surface-300">Débito/Crédito:</span><span id="cTarjeta" class="text-blue-400">$0.00</span></div>
+            <div class="flex justify-between"><span class="text-surface-300">Transferencia:</span><span id="cTransferencia" class="text-purple-400">$0.00</span></div>
+            <div class="flex justify-between"><span class="text-surface-300">QR/MP:</span><span id="cQR" class="text-yellow-400">$0.00</span></div>
+          </div>
+
+          <div class="flex gap-3">
+            <button id="btnCalcularCierre" class="btn-ghost flex-1 py-3">
+              🔄 Calcular
+            </button>
+            <button id="btnGuardarCierre" class="btn-primary flex-1 py-3 font-display font-700">
+              💾 GUARDAR CIERRE
+            </button>
+          </div>
+          <p id="cierreMsg" class="text-sm text-center mt-3 min-h-[18px] font-mono"></p>
+        </div>
+
+        <!-- Historial cierres -->
+        <div class="card mt-4">
+          <h2 class="section-title mb-4">📋 Historial de Cierres</h2>
+          <div id="cierreHistorial" class="space-y-2 max-h-80 overflow-y-auto custom-scroll">
+            <p class="text-surface-400 text-sm text-center py-6">Sin cierres registrados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: MÉTODO DE PAGO
+══════════════════════════════════════════════ -->
+<div id="modalPago" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+  <div class="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-md shadow-glow-blue">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="font-display font-700 text-xl">Método de Pago</h3>
+        <button id="closeModalPago" class="text-surface-400 hover:text-white transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Total a pagar -->
+      <div class="bg-surface-700 rounded-xl p-4 mb-6 text-center">
+        <p class="text-surface-400 text-sm">TOTAL A COBRAR</p>
+        <p id="modalTotal" class="font-display font-900 text-4xl text-brand-400 mt-1">$0.00</p>
+      </div>
+
+      <!-- Opciones de pago -->
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <button data-method="efectivo"
+          class="pay-method-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-surface-500
+                 hover:border-brand-500 hover:bg-surface-700 transition-all">
+          <span class="text-3xl">💵</span>
+          <span class="font-600 text-sm">Efectivo</span>
+        </button>
+        <button data-method="debito_credito"
+          class="pay-method-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-surface-500
+                 hover:border-brand-500 hover:bg-surface-700 transition-all">
+          <span class="text-3xl">💳</span>
+          <span class="font-600 text-sm">Débito / Crédito</span>
+        </button>
+        <button data-method="transferencia"
+          class="pay-method-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-surface-500
+                 hover:border-brand-500 hover:bg-surface-700 transition-all">
+          <span class="text-3xl">🏦</span>
+          <span class="font-600 text-sm">Transferencia</span>
+        </button>
+        <button data-method="qr"
+          class="pay-method-btn flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-surface-500
+                 hover:border-brand-500 hover:bg-surface-700 transition-all">
+          <span class="text-3xl">📱</span>
+          <span class="font-600 text-sm">QR / MercadoPago</span>
+        </button>
+      </div>
+
+      <!-- QR de cobro (pegar imagen aquí) -->
+      <div id="qrPagoContainer" class="hidden mb-4">
+        <div class="bg-white rounded-xl p-4 flex items-center justify-center min-h-[200px]">
+          <!-- ★★★ PEGÁ TU IMAGEN QR DE PAGO AQUÍ ★★★ -->
+          <!-- Reemplazá el div de abajo con: <img src="tu_qr_de_cobro.png" class="max-w-full max-h-48" /> -->
+          <div class="text-center text-gray-500">
+            <div class="w-40 h-40 border-4 border-dashed border-gray-300 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <span class="text-5xl">📷</span>
+            </div>
+            <p class="text-sm font-semibold">Tu QR de cobro va aquí</p>
+            <p class="text-xs">Reemplazá este div con tu imagen</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Efectivo: ingreso de monto -->
+      <div id="efectivoInput" class="hidden mb-4">
+        <label class="field-label">Monto recibido ($)</label>
+        <input id="montoEfectivo" type="number" step="0.01" placeholder="0.00"
+          class="field-input font-mono text-lg" />
+        <div class="flex justify-between mt-2 text-sm">
+          <span class="text-surface-400">Vuelto:</span>
+          <span id="vuelto" class="font-mono font-600 text-green-400">$0.00</span>
+        </div>
+      </div>
+
+      <button id="btnConfirmarPago"
+        class="w-full btn-primary py-4 font-display font-700 text-lg disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+        ✅ CONFIRMAR VENTA
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: TICKET / RECIBO
+══════════════════════════════════════════════ -->
+<div id="modalTicket" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+  <div class="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-sm shadow-glow-blue">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-display font-700 text-xl">✅ Venta Confirmada</h3>
+        <button id="closeModalTicket" class="text-surface-400 hover:text-white">✕</button>
+      </div>
+
+      <!-- Ticket imprimible -->
+      <div id="ticketContent" class="bg-white text-gray-900 rounded-xl p-4 font-mono text-xs mb-4">
+        <!-- Generado dinámicamente por JS -->
+      </div>
+
+      <!-- QR con datos de la venta -->
+      <div id="ticketQR" class="flex justify-center my-3 bg-white rounded-xl p-3"></div>
+
+      <div class="flex gap-3 mt-4">
+        <button id="btnPrintTicket" class="btn-ghost flex-1 py-3">
+          🖨️ Imprimir
+        </button>
+        <button id="btnNuevaVenta" class="btn-primary flex-1 py-3 font-display font-700">
+          🛒 Nueva Venta
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notifications -->
+<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+<!-- Firebase & App Scripts -->
+<script type="module" src="app.js"></script>
 
 </body>
 </html>
