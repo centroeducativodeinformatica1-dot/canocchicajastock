@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Canocchi Stock</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f5f5f5;
+}
+
+/* LOGIN */
+#login {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+#login img {
+  width: 180px;
+  margin-bottom: 20px;
+}
+
+input {
+  padding: 10px;
+  margin: 5px;
+  width: 220px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-rojo {
+  background: #d60000;
+  color: white;
+}
+
+#loading {
+  margin-top: 10px;
+  color: #d60000;
+  display: none;
+}
+
+/* APP */
+#app {
+  display: none;
+  padding: 20px;
+}
+
+h1 {
+  color: #d60000;
+}
+
+.seccion {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.producto {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+.stock-bajo { color: orange; }
+.stock-critico { color: red; font-weight: bold; }
+
+img.icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Excel button */
+#excelBtn {
+  margin: 10px 0;
+  background: none;
+}
+
+/* NOTI */
+#noti {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #d60000;
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  display: none;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <img src="CanocchiLogo.PNG">
+  <input id="user" placeholder="Usuario">
+  <input id="pass" type="password" placeholder="Contraseña">
+  <button class="btn-rojo" onclick="login()">Iniciar sesión</button>
+  <div id="loading">Cargando...</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <h1>Control de Stock</h1>
+
+  <input id="buscador" placeholder="Buscar por nombre, marca o código...">
+
+  <button id="excelBtn" onclick="exportarExcel()">
+    <img src="logoexcel.png" style="width:26px;height:26px;">
+  </button>
+
+  <div id="contenedor"></div>
+
+  <button class="btn-rojo" onclick="agregarSeccion()">+ Sección</button>
+</div>
+
+<div id="noti"></div>
+
+<script>
+// LOGIN
+function login() {
+  const u = document.getElementById("user").value;
+  const p = document.getElementById("pass").value;
+
+  document.getElementById("loading").style.display = "block";
+
+  setTimeout(() => {
+    if (u === "Cannochi" && p === "Guemes1194") {
+      document.getElementById("login").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      render();
+    } else {
+      alert("Datos incorrectos");
+    }
+    document.getElementById("loading").style.display = "none";
+  }, 800);
+}
+
+// DATA (queda guardado SIEMPRE)
+let data = JSON.parse(localStorage.getItem("stock")) || {
+  "Golosinas": []
+};
+
+function save() {
+  localStorage.setItem("stock", JSON.stringify(data));
+}
+
+// RENDER
+function render() {
+  const cont = document.getElementById("contenedor");
+  cont.innerHTML = "";
+
+  Object.keys(data).sort().forEach(sec => {
+    const div = document.createElement("div");
+    div.className = "seccion";
+
+    div.innerHTML = <h2>${sec}</h2>;
+
+    data[sec].sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(p => {
+      let clase = "";
+      if (p.cantidad <= 2) clase = "stock-critico";
+      else if (p.cantidad <= 3) clase = "stock-bajo";
+
+      const el = document.createElement("div");
+      el.className = "producto";
+      el.innerHTML = `
+        <span class="${clase}">
+          ${p.nombre} (${p.marca || ""}) - ${p.cantidad}
+        </span>
+        <button onclick="delProd('${sec}','${p.nombre}')">
+          <img src="eliminar.png" class="icon">
+        </button>
+      `;
+
+      if (p.cantidad <= 2) noti(p.nombre + " sin stock");
+      else if (p.cantidad === 3) noti(p.nombre + " bajo stock");
+
+      div.appendChild(el);
+    });
+
+    const btn = document.createElement("button");
+    btn.innerHTML = <img src="agregar.png" class="icon">;
+    btn.onclick = () => addProd(sec);
+
+    div.appendChild(btn);
+    cont.appendChild(div);
+  });
+}
+
+// PRODUCTOS
+function addProd(sec) {
+  const nombre = prompt("Nombre:");
+  if (!nombre) return;
+
+  const marca = prompt("Marca:");
+  const cant = parseInt(prompt("Cantidad (obligatoria):"));
+  if (isNaN(cant)) return alert("Cantidad inválida");
+
+  const cod = prompt("Código de barras (opcional):");
+
+  data[sec].push({nombre, marca, cantidad: cant, codigo: cod});
+  save();
+  render();
+}
+
+function delProd(sec, nombre) {
+  data[sec] = data[sec].filter(p => p.nombre !== nombre);
+  save();
+  render();
+}
+
+// SECCION
+function agregarSeccion() {
+  const n = prompt("Nombre sección:");
+  if (!n) return;
+
+  data[n] = [];
+  save();
+  render();
+}
+
+// BUSCADOR
+document.getElementById("buscador").addEventListener("input", e=>{
+  const v = e.target.value.toLowerCase();
+  document.querySelectorAll(".producto").forEach(p=>{
+    p.style.display = p.textContent.toLowerCase().includes(v) ? "flex" : "none";
+  });
+});
+
+// NOTIFICACION
+function noti(msg){
+  const n = document.getElementById("noti");
+  n.innerText = msg;
+  n.style.display = "block";
+  setTimeout(()=> n.style.display="none",2000);
+}
+
+// EXPORTAR A EXCEL (CSV)
+function exportarExcel() {
+  let filas = [["Sección","Nombre","Marca","Cantidad","Código"]];
+
+  Object.keys(data).forEach(sec => {
+    data[sec].forEach(p => {
+      filas.push([
+        sec,
+        p.nombre,
+        p.marca || "",
+        p.cantidad,
+        p.codigo || ""
+      ]);
+    });
+  });
+
+  let csv = filas.map(f => f.join(",")).join("\n");
+
+  let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  let url = URL.createObjectURL(blob);
+
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = "stock_canocchi.csv";
+  a.click();
+}
+</script>
+
+</body>
+</html>
