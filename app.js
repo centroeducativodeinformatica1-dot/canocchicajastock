@@ -37,6 +37,8 @@ let lastSaleData  = null;      // for ticket generation
 let stockUnsubscribe = null;   // realtime listener
 let stockHtml5QrCode   = null; // stock tab scanner instance
 let stockScannerActive = false;
+let lastScannedCode    = '';   // debounce: evitar doble escaneo del mismo código
+let scanCooldown       = false;
 
 // ════════════════════════════════════════════════════
 //   UTILITIES
@@ -201,6 +203,12 @@ async function stopScanner() {
 
 async function onScanSuccess(code) {
   if (!code) return;
+  // Evitar disparar múltiples veces el mismo código en rápida sucesión
+  if (scanCooldown || code === lastScannedCode) return;
+  scanCooldown    = true;
+  lastScannedCode = code;
+  setTimeout(() => { scanCooldown = false; lastScannedCode = ''; }, 2500);
+
   document.getElementById('scanStatus').textContent = `📦 Buscando: ${code}…`;
   await addProductToCartByBarcode(code);
 }
@@ -236,7 +244,8 @@ async function addProductToCartByBarcode(barcode) {
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
-      // Producto no existe → abrir modal de alta rápida con código pre-cargado
+      // Producto no existe → detener escáner y abrir modal de alta rápida
+      await stopScanner(); // frenar la cámara para que no siga disparando
       document.getElementById('scanStatus').textContent = `⚠️ Código ${barcode} no registrado`;
       openQuickAddModal(barcode);
       return;
@@ -494,37 +503,47 @@ document.getElementById('btnConfirmarPago').addEventListener('click', async () =
     const saleId = `VTA-${Date.now()}`;
 
     // Run Firestore transaction: descuenta stock y guarda la venta
+    // IMPORTANTE: Firestore requiere TODOS los reads antes de cualquier write
     await runTransaction(db, async (tx) => {
-      // 1. Verify & deduct stock for each item
-      for (const item of cart) {
-        const prodRef  = doc(db, 'productos', item.id);
-        const prodSnap = await tx.get(prodRef);
-        if (!prodSnap.exists()) throw new Error(`Producto ${item.id} no encontrado`);
-        const currentStock = prodSnap.data().stock;
-        if (currentStock < item.quantity) throw new Error(`Stock insuficiente para ${item.name}`);
-        tx.update(prodRef, { stock: currentStock - item.quantity });
+      // ── FASE 1: todos los READS ──────────────────────
+      const prodRefs  = cart.map(item => doc(db, 'productos', item.id));
+      const rankRefs  = cart.map(item => doc(db, 'ranking',   item.id));
+
+      const prodSnaps = await Promise.all(prodRefs.map(r => tx.get(r)));
+      const rankSnaps = await Promise.all(rankRefs.map(r => tx.get(r)));
+
+      // Validar stock antes de escribir nada
+      for (let i = 0; i < cart.length; i++) {
+        if (!prodSnaps[i].exists()) throw new Error(`Producto "${cart[i].name}" no encontrado en inventario`);
+        const currentStock = prodSnaps[i].data().stock;
+        if (currentStock < cart[i].quantity) throw new Error(`Stock insuficiente para "${cart[i].name}" (disponible: ${currentStock})`);
       }
 
-      // 2. Save sale document
+      // ── FASE 2: todos los WRITES ─────────────────────
+      // 2a. Descontar stock
+      for (let i = 0; i < cart.length; i++) {
+        const currentStock = prodSnaps[i].data().stock;
+        tx.update(prodRefs[i], { stock: currentStock - cart[i].quantity, updatedAt: serverTimestamp() });
+      }
+
+      // 2b. Guardar venta
       const saleRef = doc(db, 'ventas', saleId);
       tx.set(saleRef, {
-        id:         saleId,
-        items:      cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
+        id:        saleId,
+        items:     cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
         total,
-        method:     selectedMethod,
-        date:       today(),
-        timestamp:  serverTimestamp(),
-        cashier:    auth.currentUser?.email || 'desconocido',
+        method:    selectedMethod,
+        date:      today(),
+        timestamp: serverTimestamp(),
+        cashier:   auth.currentUser?.email || 'desconocido',
       });
 
-      // 3. Update ranking counters
-      for (const item of cart) {
-        const rankRef  = doc(db, 'ranking', item.id);
-        const rankSnap = await tx.get(rankRef);
-        const prev     = rankSnap.exists() ? rankSnap.data().totalSold : 0;
-        tx.set(rankRef, {
-          name:      item.name,
-          totalSold: prev + item.quantity,
+      // 2c. Actualizar ranking
+      for (let i = 0; i < cart.length; i++) {
+        const prev = rankSnaps[i].exists() ? rankSnaps[i].data().totalSold : 0;
+        tx.set(rankRefs[i], {
+          name:      cart[i].name,
+          totalSold: prev + cart[i].quantity,
           lastSale:  serverTimestamp(),
         }, { merge: true });
       }
