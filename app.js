@@ -233,8 +233,9 @@ async function addProductToCartByBarcode(barcode) {
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
-      toast(`Producto no encontrado: ${barcode}`, 'error');
-      document.getElementById('scanStatus').textContent = `❌ No encontrado: ${barcode}`;
+      // Producto no existe → abrir modal de alta rápida con código pre-cargado
+      document.getElementById('scanStatus').textContent = `⚠️ Código ${barcode} no registrado`;
+      openQuickAddModal(barcode);
       return;
     }
 
@@ -247,6 +248,67 @@ async function addProductToCartByBarcode(barcode) {
     console.error(e);
   }
 }
+
+// ── Quick Add Modal ──────────────────────────────────
+function openQuickAddModal(barcode) {
+  document.getElementById('qaBarcode').value  = barcode;
+  document.getElementById('qaName').value     = '';
+  document.getElementById('qaSection').value  = '';
+  document.getElementById('qaBrand').value    = '';
+  document.getElementById('qaPrice').value    = '';
+  document.getElementById('qaStock').value    = '';
+  document.getElementById('qaMsg').textContent = '';
+  document.getElementById('qaAddToCart').checked = true;
+  openModal('modalQuickAdd');
+  setTimeout(() => document.getElementById('qaName').focus(), 100);
+}
+
+document.getElementById('btnSaveQuickAdd').addEventListener('click', async () => {
+  const barcode = document.getElementById('qaBarcode').value.trim();
+  const name    = document.getElementById('qaName').value.trim();
+  const section = document.getElementById('qaSection').value.trim();
+  const brand   = document.getElementById('qaBrand').value.trim();
+  const price   = parseFloat(document.getElementById('qaPrice').value);
+  const stock   = parseInt(document.getElementById('qaStock').value);
+  const addToCartAfter = document.getElementById('qaAddToCart').checked;
+  const msgEl   = document.getElementById('qaMsg');
+
+  if (!name || isNaN(price) || isNaN(stock)) {
+    msgEl.textContent = '⚠️ Completá Nombre, Precio y Stock';
+    msgEl.className   = 'text-xs text-yellow-400 font-mono text-center';
+    return;
+  }
+
+  const btn = document.getElementById('btnSaveQuickAdd');
+  showLoading(btn, 'Guardando...');
+
+  try {
+    const productData = { name, section, brand, price, stock, barcode,
+                          createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+    await setDoc(doc(db, 'productos', barcode), productData, { merge: true });
+
+    toast(`✅ "${name}" guardado en inventario`, 'success');
+    document.getElementById('scanStatus').textContent = `✅ Producto registrado: ${name}`;
+
+    closeModal('modalQuickAdd');
+
+    if (addToCartAfter) {
+      addToCart({ id: barcode, ...productData });
+      setTimeout(() => { document.getElementById('scanStatus').textContent = '📡 Listo para escanear'; }, 2000);
+    }
+
+    // Refresh stock list si está visible
+    if (!document.getElementById('tab-stock').classList.contains('hidden')) loadStockList();
+
+  } catch (e) {
+    msgEl.textContent = `❌ Error: ${e.message}`;
+    msgEl.className   = 'text-xs text-red-400 font-mono text-center';
+  } finally {
+    stopLoading(btn);
+  }
+});
+
+document.getElementById('closeModalQuickAdd').addEventListener('click', () => closeModal('modalQuickAdd'));
 
 // Live search by name
 document.getElementById('searchProduct').addEventListener('input', async (e) => {

@@ -544,6 +544,84 @@
 <!-- Toast notifications -->
 <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
 
+<!-- ══════════════════════════════════════════════
+     MODAL: ALTA RÁPIDA DE PRODUCTO (código no encontrado)
+══════════════════════════════════════════════ -->
+<div id="modalQuickAdd" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+  <div class="bg-surface-800 border border-brand-600 rounded-2xl w-full max-w-md shadow-glow-blue">
+    <div class="p-6">
+
+      <!-- Header -->
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h3 class="font-display font-700 text-xl text-white">Producto no encontrado</h3>
+          <p class="text-surface-400 text-sm mt-0.5">Completá los datos para darlo de alta ahora</p>
+        </div>
+        <button id="closeModalQuickAdd" class="text-surface-400 hover:text-white transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Código detectado -->
+      <div class="bg-surface-700 border border-brand-700 rounded-xl px-4 py-2.5 mb-4 flex items-center gap-3">
+        <span class="text-2xl">📦</span>
+        <div>
+          <p class="text-xs text-brand-400 font-600 uppercase tracking-widest">Código escaneado</p>
+          <p id="qaBarcode" class="font-mono font-700 text-white text-base"></p>
+        </div>
+      </div>
+
+      <!-- Formulario -->
+      <div class="space-y-3">
+        <div>
+          <label class="field-label">Nombre del producto *</label>
+          <input id="qaName" type="text" placeholder="Ej: Gaseosa Cola 500ml"
+            class="field-input" autocomplete="off" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label">Sección</label>
+            <input id="qaSection" type="text" placeholder="Bebidas, Ropa..." class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Marca</label>
+            <input id="qaBrand" type="text" placeholder="Marca..." class="field-input" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label">Precio ($) *</label>
+            <input id="qaPrice" type="number" step="0.01" placeholder="0.00" class="field-input font-mono" />
+          </div>
+          <div>
+            <label class="field-label">Stock inicial *</label>
+            <input id="qaStock" type="number" placeholder="1" class="field-input font-mono" />
+          </div>
+        </div>
+
+        <!-- Checkbox agregar al carrito -->
+        <label class="flex items-center gap-3 cursor-pointer select-none bg-surface-700 rounded-xl px-4 py-3
+                      border border-surface-500 hover:border-brand-600 transition-all">
+          <input id="qaAddToCart" type="checkbox" checked class="w-4 h-4 accent-blue-500 cursor-pointer" />
+          <span class="text-sm text-white">Agregar al carrito luego de guardar</span>
+        </label>
+
+        <p id="qaMsg" class="text-xs font-mono text-center min-h-[16px]"></p>
+
+        <div class="flex gap-3 pt-1">
+          <button onclick="document.getElementById('closeModalQuickAdd').click()"
+            class="btn-ghost flex-1 py-3 text-sm">Cancelar</button>
+          <button id="btnSaveQuickAdd" class="btn-primary flex-1 py-3 font-display font-700">
+            💾 GUARDAR PRODUCTO
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase & App Scripts -->
 <script type="module" src="app.js"></script>
 
