@@ -713,18 +713,28 @@ async function loadStockList(filter = '') {
       return;
     }
 
-    el.innerHTML = products.map(p => `
-      <div class="stock-item ${p.stock < 5 ? 'low-stock' : ''}" data-id="${p.id}">
+    el.innerHTML = products.map(p => {
+      const stockColor = p.stock <= 0 ? 'text-red-400' : p.stock < 5 ? 'text-yellow-400' : 'text-green-400';
+      const rowClass   = p.stock <= 0 ? 'stock-item border-red-900/40 bg-red-950/10' : p.stock < 5 ? 'stock-item low-stock' : 'stock-item';
+      return `
+      <div class="${rowClass}" data-id="${p.id}">
         <div class="flex-1 min-w-0">
           <p class="text-sm font-600 text-white truncate">${p.name}</p>
-          <p class="text-xs text-[#475569] font-mono">${p.id} · ${p.section || '—'} · ${p.brand || '—'}</p>
+          <p class="text-xs text-surface-400 font-mono">${p.id} · ${p.section || '—'} · ${p.brand || '—'}</p>
         </div>
-        <div class="text-right flex-shrink-0">
-          <p class="text-[#2d6ef4] font-mono font-700 text-sm">${fmt(p.price)}</p>
-          <p class="text-xs ${p.stock < 5 ? 'text-yellow-400' : 'text-[#475569]'} font-mono">Stock: ${p.stock}</p>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <p class="text-brand-400 font-mono font-700 text-sm">${fmt(p.price)}</p>
+          <!-- Stock editable inline -->
+          <div class="flex items-center gap-1 bg-surface-700 border border-surface-500 rounded-lg px-1.5 py-0.5">
+            <button onclick="window._adjustStock('${p.id}', -1, ${p.stock})"
+              class="w-5 h-5 flex items-center justify-center text-surface-300 hover:text-white text-base leading-none transition-colors font-bold">−</button>
+            <span id="stock-val-${p.id}" class="font-mono text-sm w-6 text-center ${stockColor}">${p.stock}</span>
+            <button onclick="window._adjustStock('${p.id}', 1, ${p.stock})"
+              class="w-5 h-5 flex items-center justify-center text-surface-300 hover:text-white text-base leading-none transition-colors font-bold">+</button>
+          </div>
         </div>
       </div>
-    `).join('');
+    `}).join('');
   } catch (e) {
     el.innerHTML = `<p class="text-red-400 text-sm text-center py-4">Error: ${e.message}</p>`;
   }
@@ -924,6 +934,80 @@ function closeModal(id) {
     if (e.target.id === id) closeModal(id);
   });
 });
+
+// ── Adjust stock inline ───────────────────────────────
+window._adjustStock = async function(productId, delta, currentStock) {
+  const newStock = Math.max(0, currentStock + delta);
+  const spanEl   = document.getElementById(`stock-val-${productId}`);
+
+  // Optimistic UI update
+  if (spanEl) {
+    spanEl.textContent = newStock;
+    spanEl.className = `font-mono text-sm w-6 text-center ${newStock <= 0 ? 'text-red-400' : newStock < 5 ? 'text-yellow-400' : 'text-green-400'}`;
+    // Update the onclick attributes of surrounding buttons
+    const row = document.querySelector(`[data-id="${productId}"]`);
+    if (row) {
+      const [btnMinus, btnPlus] = row.querySelectorAll('button[onclick*="_adjustStock"]');
+      if (btnMinus) btnMinus.setAttribute('onclick', `window._adjustStock('${productId}', -1, ${newStock})`);
+      if (btnPlus)  btnPlus.setAttribute('onclick',  `window._adjustStock('${productId}', 1, ${newStock})`);
+      // Update row color
+      row.className = newStock <= 0
+        ? 'stock-item border-red-900/40 bg-red-950/10'
+        : newStock < 5 ? 'stock-item low-stock' : 'stock-item';
+    }
+  }
+
+  try {
+    await updateDoc(doc(db, 'productos', productId), {
+      stock: newStock,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (e) {
+    toast(`Error al actualizar stock: ${e.message}`, 'error');
+    // Revert
+    if (spanEl) spanEl.textContent = currentStock;
+  }
+};
+
+// ── Export to Excel ───────────────────────────────────
+async function exportStockToExcel() {
+  try {
+    const snap     = await getDocs(collection(db, 'productos'));
+    const products = snap.docs.map(d => {
+      const p = d.data();
+      return {
+        'Código de Barras': d.id,
+        'Nombre':           p.name    || '',
+        'Sección':          p.section || '',
+        'Marca':            p.brand   || '',
+        'Precio ($)':       p.price   ?? 0,
+        'Stock':            p.stock   ?? 0,
+        'Valor en Stock ($)': (p.price ?? 0) * (p.stock ?? 0),
+      };
+    });
+
+    products.sort((a, b) => a['Nombre'].localeCompare(b['Nombre']));
+
+    const ws = XLSX.utils.json_to_sheet(products);
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 18 }, { wch: 32 }, { wch: 16 }, { wch: 16 },
+      { wch: 12 }, { wch: 8  }, { wch: 18 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+
+    const fecha = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `inventario_canocchi_${fecha}.xlsx`);
+    toast('✅ Excel exportado', 'success');
+  } catch (e) {
+    toast(`Error al exportar: ${e.message}`, 'error');
+  }
+}
+
+document.getElementById('btnExportExcel').addEventListener('click', exportStockToExcel);
 
 // ════════════════════════════════════════════════════
 //   STOCK TAB — BARCODE SCANNER
