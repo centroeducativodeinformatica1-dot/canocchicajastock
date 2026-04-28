@@ -190,13 +190,7 @@ async function stopScanner() {
   document.getElementById('scanStatus').textContent = '';
   document.getElementById('qr-reader').innerHTML = `
     <div class="text-center text-[#475569] p-8">
-      <svg class="w-12 h-12 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01
-             M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0
-             001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1
-             1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-      </svg>
+      <img src="scanner-placeholder.png" alt="Escáner" class="w-24 h-24 mx-auto mb-3 object-contain opacity-70" onerror="this.style.display='none'" />
       <p class="text-sm">Presioná "Activar Cámara" para escanear</p>
     </div>`;
 }
@@ -587,16 +581,13 @@ function generateTicket(sale) {
      <td style="text-align:right">${fmt(i.price * i.quantity)}</td></tr>`
   ).join('');
 
-  // Logo: intentamos cargar logo.png, si falla mostramos solo el nombre
-  const logoHTML = `<img src="logo.png" alt="Canocchi Store"
-    style="width:64px;height:64px;object-fit:contain;margin:0 auto 6px;display:block"
-    onerror="this.style.display='none'" />`;
-
   document.getElementById('ticketContent').innerHTML = `
     <div style="text-align:center;margin-bottom:8px">
-      ${logoHTML}
+      <img src="logo.png" alt="Canocchi Store"
+        style="width:64px;height:64px;object-fit:contain;margin:0 auto 6px;display:block"
+        onerror="this.style.display='none'" />
       <strong style="font-size:1.1em">CANOCCHI STORE</strong><br/>
-      <span style="font-size:0.75em">Sistema de Punto de Venta</span>
+      <span style="font-size:0.75em">Stock and Pricing System V2.2.2.6</span>
     </div>
     <hr style="border-color:#ddd;margin:6px 0"/>
     <table style="width:100%;font-size:0.7em;border-collapse:collapse">
@@ -654,7 +645,6 @@ document.getElementById('btnShareWhatsapp').addEventListener('click', () => {
   const itemLines = lastSaleData.items
     .map(i => `• ${i.name} x${i.quantity} — ${fmt(i.price * i.quantity)}`)
     .join('\n');
-
   const msg =
 `🛒 *CANOCCHI STORE*
 📋 Ticket N° ${lastSaleData.saleId}
@@ -667,9 +657,7 @@ ${itemLines}
 💳 Pago: ${methods[lastSaleData.method] || lastSaleData.method}
 ━━━━━━━━━━━━━━
 ¡Gracias por su compra! 🙌`;
-
-  const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 });
 
 document.getElementById('btnNuevaVenta').addEventListener('click', () => {
