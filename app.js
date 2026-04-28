@@ -587,8 +587,14 @@ function generateTicket(sale) {
      <td style="text-align:right">${fmt(i.price * i.quantity)}</td></tr>`
   ).join('');
 
+  // Logo: intentamos cargar logo.png, si falla mostramos solo el nombre
+  const logoHTML = `<img src="logo.png" alt="Canocchi Store"
+    style="width:64px;height:64px;object-fit:contain;margin:0 auto 6px;display:block"
+    onerror="this.style.display='none'" />`;
+
   document.getElementById('ticketContent').innerHTML = `
     <div style="text-align:center;margin-bottom:8px">
+      ${logoHTML}
       <strong style="font-size:1.1em">CANOCCHI STORE</strong><br/>
       <span style="font-size:0.75em">Sistema de Punto de Venta</span>
     </div>
@@ -639,6 +645,31 @@ document.getElementById('btnPrintTicket').addEventListener('click', () => {
     <style>body{font-family:monospace;padding:1rem;font-size:12px}table{width:100%;border-collapse:collapse}</style>
     </head><body>${content}<script>window.onload=()=>{window.print();window.close()}</sc` + `ript></body></html>`);
   w.document.close();
+});
+
+document.getElementById('btnShareWhatsapp').addEventListener('click', () => {
+  if (!lastSaleData) return;
+  const methods = { efectivo: 'Efectivo', debito_credito: 'Débito/Crédito', transferencia: 'Transferencia', qr: 'QR/MercadoPago' };
+  const now = lastSaleData.timestamp.toLocaleString('es-AR');
+  const itemLines = lastSaleData.items
+    .map(i => `• ${i.name} x${i.quantity} — ${fmt(i.price * i.quantity)}`)
+    .join('\n');
+
+  const msg =
+`🛒 *CANOCCHI STORE*
+📋 Ticket N° ${lastSaleData.saleId}
+📅 ${now}
+
+${itemLines}
+
+━━━━━━━━━━━━━━
+💰 *TOTAL: ${fmt(lastSaleData.total)}*
+💳 Pago: ${methods[lastSaleData.method] || lastSaleData.method}
+━━━━━━━━━━━━━━
+¡Gracias por su compra! 🙌`;
+
+  const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
 });
 
 document.getElementById('btnNuevaVenta').addEventListener('click', () => {
