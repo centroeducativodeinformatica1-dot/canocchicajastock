@@ -648,7 +648,7 @@
   <div class="bg-white border border-surface-600 rounded-2xl w-full max-w-lg shadow-glow-blue">
     <div class="p-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="font-display font-700 text-xl text-gray-800">⬆️ Importar Inventario</h3>
+        <h3 class="font-display font-700 text-xl text-gray-800">📥 Importar Inventario</h3>
         <button id="closeModalImport" class="text-surface-400 hover:text-gray-700 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -658,14 +658,29 @@
 
       <!-- Info columnas requeridas -->
       <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-xs text-blue-800 space-y-1">
-        <p class="font-semibold">📋 El archivo debe tener estas columnas (igual que el exportado):</p>
+        <p class="font-semibold">📋 El archivo debe tener estas columnas (igual que la plantilla):</p>
         <p class="font-mono">Código de Barras · Nombre · Sección · Marca · Precio ($) · Stock</p>
         <p class="mt-1 text-blue-600">Si el producto ya existe se actualizará. Si no existe, se creará.</p>
       </div>
 
+      <!-- Zona de selección de archivo -->
+      <input type="file" id="importExcelInput" accept=".xlsx,.xls" class="hidden" />
+      <div id="importDropZone"
+        class="border-2 border-dashed border-surface-500 rounded-xl p-6 mb-4 text-center cursor-pointer
+               hover:border-brand-500 hover:bg-brand-50 transition-all"
+        onclick="document.getElementById('importExcelInput').click()">
+        <p class="text-3xl mb-2">📂</p>
+        <p class="text-sm font-semibold text-gray-700">Hacé click para seleccionar tu archivo Excel</p>
+        <p class="text-xs text-gray-400 mt-1">Formatos aceptados: .xlsx, .xls</p>
+      </div>
+
       <!-- Nombre del archivo seleccionado -->
-      <div id="importFileName" class="text-sm text-gray-500 font-mono mb-4 hidden">
-        📄 <span id="importFileNameText"></span>
+      <div id="importFileName" class="flex items-center gap-2 text-sm text-gray-600 font-mono bg-gray-50
+           border border-gray-200 rounded-xl px-4 py-2.5 mb-4 hidden">
+        <span class="text-lg">📄</span>
+        <span id="importFileNameText" class="truncate flex-1"></span>
+        <button onclick="document.getElementById('importExcelInput').click()"
+          class="text-xs text-brand-600 hover:text-brand-700 font-semibold flex-shrink-0">Cambiar</button>
       </div>
 
       <!-- Preview tabla -->
@@ -690,7 +705,7 @@
       <div class="flex gap-3 pt-1">
         <button id="btnCancelImport" class="btn-ghost flex-1 py-3 text-sm">Cancelar</button>
         <button id="btnConfirmImport" class="btn-primary flex-1 py-3 font-display font-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled>
-          💾 SUBIR A FIRESTORE
+          ✅ IMPORTAR AL SISTEMA
         </button>
       </div>
       <p id="importProgress" class="text-xs text-center font-mono mt-3 min-h-[16px] text-gray-500"></p>

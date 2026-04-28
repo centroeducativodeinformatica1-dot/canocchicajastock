@@ -1111,6 +1111,7 @@ document.getElementById('btnImportExcel').addEventListener('click', () => {
   importRows = [];
   document.getElementById('importPreviewWrap').classList.add('hidden');
   document.getElementById('importFileName').classList.add('hidden');
+  document.getElementById('importDropZone').classList.remove('hidden');
   document.getElementById('importErrorMsg').classList.add('hidden');
   document.getElementById('btnConfirmImport').disabled = true;
   document.getElementById('importProgress').textContent = '';
@@ -1128,6 +1129,7 @@ document.getElementById('importExcelInput').addEventListener('change', (e) => {
 
   document.getElementById('importFileNameText').textContent = file.name;
   document.getElementById('importFileName').classList.remove('hidden');
+  document.getElementById('importDropZone').classList.add('hidden');
   document.getElementById('importErrorMsg').classList.add('hidden');
   document.getElementById('btnConfirmImport').disabled = true;
   importRows = [];
@@ -1212,7 +1214,7 @@ document.getElementById('btnConfirmImport').addEventListener('click', async () =
   const btn      = document.getElementById('btnConfirmImport');
   const progress = document.getElementById('importProgress');
   btn.disabled   = true;
-  btn.textContent = '⏳ Subiendo...';
+  btn.textContent = '⏳ Importando...';
 
   try {
     const { writeBatch } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -1239,19 +1241,21 @@ document.getElementById('btnConfirmImport').addEventListener('click', async () =
 
       await batch.commit();
       uploaded += chunk.length;
-      progress.textContent = `Subiendo… ${uploaded} / ${importRows.length}`;
+      progress.textContent = `⏳ Guardando… ${uploaded} / ${importRows.length} productos`;
     }
 
-    progress.textContent = `✅ ${uploaded} productos importados correctamente`;
-    toast(`${uploaded} productos importados`, 'success');
+    progress.textContent = `✅ ${uploaded} producto${uploaded !== 1 ? 's' : ''} importado${uploaded !== 1 ? 's' : ''} correctamente`;
+    progress.className   = 'text-xs text-center font-mono mt-3 min-h-[16px] text-green-600';
+    toast(`✅ ${uploaded} productos importados al inventario`, 'success');
     loadStockList();
 
-    setTimeout(() => closeModal('modalImport'), 2000);
+    setTimeout(() => closeModal('modalImport'), 2200);
 
   } catch (err) {
     progress.textContent = `❌ Error: ${err.message}`;
+    progress.className   = 'text-xs text-center font-mono mt-3 min-h-[16px] text-red-500';
     toast(`Error al importar: ${err.message}`, 'error');
     btn.disabled = false;
-    btn.textContent = '💾 SUBIR A FIRESTORE';
+    btn.textContent = '✅ IMPORTAR AL SISTEMA';
   }
 });
