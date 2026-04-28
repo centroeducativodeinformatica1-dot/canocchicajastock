@@ -238,14 +238,19 @@ manualBarcodeInput.addEventListener('keydown', async (e) => {
 //   PRODUCT LOOKUP
 // ════════════════════════════════════════════════════
 
+// Helper: restores focus to manual barcode input (for USB/pistola scanners)
+function refocusBarcode() {
+  const input = document.getElementById('manualBarcode');
+  if (input) setTimeout(() => { input.focus(); input.select(); }, 150);
+}
+
 async function addProductToCartByBarcode(barcode) {
   try {
     const docRef  = doc(db, 'productos', barcode);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
-      // Producto no existe → detener escáner y abrir modal de alta rápida
-      await stopScanner(); // frenar la cámara para que no siga disparando
+      await stopScanner();
       document.getElementById('scanStatus').textContent = `⚠️ Código ${barcode} no registrado`;
       openQuickAddModal(barcode);
       return;
@@ -255,6 +260,7 @@ async function addProductToCartByBarcode(barcode) {
     addToCart(product);
     document.getElementById('scanStatus').textContent = `✅ Agregado: ${product.name}`;
     setTimeout(() => { document.getElementById('scanStatus').textContent = '📡 Listo para escanear'; }, 2000);
+    refocusBarcode(); // ← vuelve el foco al campo para el próximo escaneo
   } catch (e) {
     toast('Error al buscar producto', 'error');
     console.error(e);
@@ -304,6 +310,7 @@ document.getElementById('btnSaveQuickAdd').addEventListener('click', async () =>
     document.getElementById('scanStatus').textContent = `✅ Producto registrado: ${name}`;
 
     closeModal('modalQuickAdd');
+    refocusBarcode();
 
     if (addToCartAfter) {
       addToCart({ id: barcode, ...productData });
@@ -321,7 +328,7 @@ document.getElementById('btnSaveQuickAdd').addEventListener('click', async () =>
   }
 });
 
-document.getElementById('closeModalQuickAdd').addEventListener('click', () => closeModal('modalQuickAdd'));
+document.getElementById('closeModalQuickAdd').addEventListener('click', () => { closeModal('modalQuickAdd'); refocusBarcode(); });
 
 // Live search by name
 document.getElementById('searchProduct').addEventListener('input', async (e) => {
@@ -636,7 +643,8 @@ document.getElementById('btnPrintTicket').addEventListener('click', () => {
 
 document.getElementById('btnNuevaVenta').addEventListener('click', () => {
   closeModal('modalTicket');
-  loadStockList(); // refresh stock display
+  loadStockList();
+  refocusBarcode(); // listo para el siguiente cliente
 });
 
 document.getElementById('closeModalTicket').addEventListener('click', () => closeModal('modalTicket'));
