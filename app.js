@@ -349,10 +349,10 @@ document.getElementById('searchProduct').addEventListener('input', async (e) => 
     resultsEl.innerHTML = matches.map(p => `
       <div class="stock-item cursor-pointer hover:border-brand-500" data-id="${p.id}">
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-600 text-white truncate">${p.name}</p>
-          <p class="text-xs text-surface-400 font-mono">${p.id} • ${p.brand || ''} • Stock: ${p.stock}</p>
+          <p class="text-sm font-semibold text-gray-800 truncate">${p.name}</p>
+          <p class="text-xs text-gray-400 font-mono">${p.id} • ${p.brand || ''} • Stock: ${p.stock}</p>
         </div>
-        <span class="text-brand-400 font-display font-700 text-sm whitespace-nowrap">${fmt(p.price)}</span>
+        <span class="text-brand-600 font-display font-bold text-sm whitespace-nowrap">${fmt(p.price)}</span>
         <button class="btn-primary text-xs px-2 py-1 ml-1">+</button>
       </div>
     `).join('');
@@ -741,23 +741,23 @@ async function loadStockList(filter = '') {
     }
 
     el.innerHTML = products.map(p => {
-      const stockColor = p.stock <= 0 ? 'text-red-400' : p.stock < 5 ? 'text-yellow-400' : 'text-green-400';
-      const rowClass   = p.stock <= 0 ? 'stock-item border-red-900/40 bg-red-950/10' : p.stock < 5 ? 'stock-item low-stock' : 'stock-item';
+      const stockColor = p.stock <= 0 ? 'text-red-500' : p.stock < 5 ? 'text-yellow-600' : 'text-green-600';
+      const rowClass   = p.stock <= 0 ? 'stock-item border-red-200 bg-red-50' : p.stock < 5 ? 'stock-item low-stock' : 'stock-item';
       return `
       <div class="${rowClass}" data-id="${p.id}">
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-600 text-white truncate">${p.name}</p>
-          <p class="text-xs text-surface-400 font-mono">${p.id} · ${p.section || '—'} · ${p.brand || '—'}</p>
+          <p class="text-sm font-semibold text-gray-800 truncate">${p.name}</p>
+          <p class="text-xs text-gray-400 font-mono">${p.id} · ${p.section || '—'} · ${p.brand || '—'}</p>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
-          <p class="text-brand-400 font-mono font-700 text-sm">${fmt(p.price)}</p>
+          <p class="text-brand-600 font-mono font-bold text-sm">${fmt(p.price)}</p>
           <!-- Stock editable inline -->
-          <div class="flex items-center gap-1 bg-surface-700 border border-surface-500 rounded-lg px-1.5 py-0.5">
+          <div class="flex items-center gap-1 bg-gray-100 border border-gray-200 rounded-lg px-1.5 py-0.5">
             <button onclick="window._adjustStock('${p.id}', -1, ${p.stock})"
-              class="w-5 h-5 flex items-center justify-center text-surface-300 hover:text-white text-base leading-none transition-colors font-bold">−</button>
+              class="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-gray-800 text-base leading-none transition-colors font-bold">−</button>
             <span id="stock-val-${p.id}" class="font-mono text-sm w-6 text-center ${stockColor}">${p.stock}</span>
             <button onclick="window._adjustStock('${p.id}', 1, ${p.stock})"
-              class="w-5 h-5 flex items-center justify-center text-surface-300 hover:text-white text-base leading-none transition-colors font-bold">+</button>
+              class="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-gray-800 text-base leading-none transition-colors font-bold">+</button>
           </div>
         </div>
       </div>
@@ -803,9 +803,9 @@ async function loadDashboard() {
       payEl.innerHTML = '<p class="text-[#475569] text-sm text-center py-8">Sin ventas hoy</p>';
     } else {
       payEl.innerHTML = Object.entries(byMethod).map(([method, amount]) => `
-        <div class="flex items-center justify-between p-3 bg-[#1a2236] rounded-xl border border-[#232d45]">
-          <span class="text-sm">${methodLabels[method] || method}</span>
-          <span class="font-display font-700 text-[#2d6ef4]">${fmt(amount)}</span>
+        <div class="flex items-center justify-between p-3 bg-[#f8f8f8] rounded-xl border border-[#e5e5e5]">
+          <span class="text-sm text-gray-700">${methodLabels[method] || method}</span>
+          <span class="font-display font-700 text-brand-600">${fmt(amount)}</span>
         </div>
       `).join('');
     }
@@ -829,14 +829,14 @@ async function loadDashboard() {
       <div class="rank-item">
         <div class="rank-badge rank-${item.rank <= 3 ? item.rank : 'other'}">${item.rank}</div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-600 text-white truncate">${item.name}</p>
+          <p class="text-sm font-600 text-gray-800 truncate">${item.name}</p>
           <div class="progress-bar mt-1">
             <div class="progress-fill" style="width:${(item.totalSold / maxSold * 100).toFixed(0)}%"></div>
           </div>
         </div>
         <div class="text-right">
-          <p class="font-display font-700 text-[#2d6ef4]">${item.totalSold}</p>
-          <p class="text-xs text-[#475569]">vendidos</p>
+          <p class="font-display font-700 text-brand-600">${item.totalSold}</p>
+          <p class="text-xs text-gray-400">vendidos</p>
         </div>
       </div>
     `).join('');
@@ -921,16 +921,16 @@ async function loadCierreHistorial() {
       const ts = c.closedAt?.toDate ? c.closedAt.toDate().toLocaleString('es-AR') : c.date;
       return `
         <div class="cierre-item">
-          <div class="flex justify-between items-center text-[#5a90f7] mb-1">
+          <div class="flex justify-between items-center text-brand-600 mb-1 font-semibold">
             <span>${c.date}</span>
             <span>${fmt(c.total)}</span>
           </div>
-          <div class="text-[#475569] text-xs space-y-0.5">
+          <div class="text-gray-600 text-xs space-y-0.5">
             <div class="flex justify-between"><span>Transacciones:</span><span>${c.tx}</span></div>
-            <div class="flex justify-between"><span>Efectivo:</span><span class="text-green-400">${fmt(c.efectivo || 0)}</span></div>
-            <div class="flex justify-between"><span>Tarjeta:</span><span class="text-blue-400">${fmt(c.debito_credito || 0)}</span></div>
-            <div class="flex justify-between"><span>QR:</span><span class="text-yellow-400">${fmt(c.qr || 0)}</span></div>
-            <div class="text-[#3d4f6e] mt-1">${ts} · ${c.closedBy || ''}</div>
+            <div class="flex justify-between"><span>Efectivo:</span><span class="text-green-700 font-semibold">${fmt(c.efectivo || 0)}</span></div>
+            <div class="flex justify-between"><span>Tarjeta:</span><span class="text-blue-700 font-semibold">${fmt(c.debito_credito || 0)}</span></div>
+            <div class="flex justify-between"><span>QR:</span><span class="text-yellow-700 font-semibold">${fmt(c.qr || 0)}</span></div>
+            <div class="text-gray-400 mt-1">${ts} · ${c.closedBy || ''}</div>
           </div>
         </div>
       `;
@@ -970,7 +970,7 @@ window._adjustStock = async function(productId, delta, currentStock) {
   // Optimistic UI update
   if (spanEl) {
     spanEl.textContent = newStock;
-    spanEl.className = `font-mono text-sm w-6 text-center ${newStock <= 0 ? 'text-red-400' : newStock < 5 ? 'text-yellow-400' : 'text-green-400'}`;
+    spanEl.className = `font-mono text-sm w-6 text-center ${newStock <= 0 ? 'text-red-500' : newStock < 5 ? 'text-yellow-600' : 'text-green-600'}`;
     // Update the onclick attributes of surrounding buttons
     const row = document.querySelector(`[data-id="${productId}"]`);
     if (row) {
@@ -979,7 +979,7 @@ window._adjustStock = async function(productId, delta, currentStock) {
       if (btnPlus)  btnPlus.setAttribute('onclick',  `window._adjustStock('${productId}', 1, ${newStock})`);
       // Update row color
       row.className = newStock <= 0
-        ? 'stock-item border-red-900/40 bg-red-950/10'
+        ? 'stock-item border-red-200 bg-red-50'
         : newStock < 5 ? 'stock-item low-stock' : 'stock-item';
     }
   }

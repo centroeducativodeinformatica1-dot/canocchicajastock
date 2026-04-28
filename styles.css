@@ -158,3 +158,66 @@
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ── Cart items ─────────────────────────────────────── */
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: #f8f8f8;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.75rem;
+  transition: border-color 0.15s;
+}
+.cart-item:hover { border-color: #e51111; }
+
+/* ── Ranking items (Dashboard) ──────────────────────── */
+.rank-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+.rank-item:last-child { border-bottom: none; }
+
+.rank-badge {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 900;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+.rank-1     { background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
+.rank-2     { background: #f1f5f9; color: #475569; border: 2px solid #94a3b8; }
+.rank-3     { background: #fef2f2; color: #9f1239; border: 2px solid #f87171; }
+.rank-other { background: #f8f8f8; color: #6b7280; border: 2px solid #e5e5e5; }
+
+.progress-bar {
+  height: 4px;
+  background: #f1f1f1;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: #e51111;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* ── Cierre historial items ──────────────────────────── */
+.cierre-item {
+  padding: 0.875rem 1rem;
+  background: #f8f8f8;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+}
+.cierre-item:hover { border-color: #e51111; }
