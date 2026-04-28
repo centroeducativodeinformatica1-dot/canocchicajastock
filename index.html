@@ -58,6 +58,9 @@
   <!-- qrcode.js para el ticket -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+  <!-- SheetJS para exportar Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <!-- Custom styles -->
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -72,12 +75,9 @@
 
     <!-- Logo / Brand -->
     <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-brand-600 shadow-glow-blue mb-4">
-        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17
-               m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-        </svg>
+      <div class="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-surface-700 border border-surface-500 shadow-glow-blue mb-4 overflow-hidden">
+        <img src="logo.png" alt="Logo" class="w-full h-full object-contain p-1"
+             onerror="this.parentElement.innerHTML='<svg class=\'w-10 h-10 text-white\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z\'/></svg>'" />
       </div>
       <h1 class="font-display text-3xl font-900 tracking-tight text-white">Canocchi Store</h1>
       <p class="text-surface-400 text-sm mt-1 font-mono">POINT OF SALE v2.0</p>
@@ -116,12 +116,9 @@
   <header class="sticky top-0 z-40 bg-surface-800 border-b border-surface-600 px-4 py-3">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center shadow-glow-sm">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17
-                 m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-          </svg>
+        <div class="w-9 h-9 rounded-lg bg-surface-700 border border-surface-500 flex items-center justify-center overflow-hidden shadow-glow-sm">
+          <img src="logo.png" alt="Logo" class="w-full h-full object-contain p-0.5"
+               onerror="this.parentElement.innerHTML='<span class=\'text-lg\'>🛒</span>'" />
         </div>
         <span class="font-display font-700 text-lg tracking-tight">Canocchi <span class="text-brand-400">POS</span></span>
       </div>
@@ -338,11 +335,17 @@
 
         <!-- Lista de stock -->
         <div class="card">
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <h2 class="section-title">📦 Inventario</h2>
-            <input id="filterStock" type="text" placeholder="Filtrar..."
-              class="bg-surface-700 border border-surface-500 rounded-lg px-3 py-1.5 text-sm text-white
-                     placeholder-surface-400 focus:outline-none focus:border-brand-500 transition-all w-32" />
+            <div class="flex items-center gap-2">
+              <input id="filterStock" type="text" placeholder="Filtrar..."
+                class="bg-surface-700 border border-surface-500 rounded-lg px-3 py-1.5 text-sm text-white
+                       placeholder-surface-400 focus:outline-none focus:border-brand-500 transition-all w-32" />
+              <button id="btnExportExcel" title="Exportar a Excel"
+                class="btn-ghost px-3 py-1.5 text-sm flex items-center gap-1.5 flex-shrink-0">
+                📊 <span class="hidden sm:inline">Excel</span>
+              </button>
+            </div>
           </div>
           <div id="stockList" class="space-y-2 max-h-[500px] overflow-y-auto custom-scroll pr-1">
             <p class="text-surface-400 text-sm text-center py-8">Cargando inventario...</p>
