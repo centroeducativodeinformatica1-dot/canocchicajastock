@@ -1099,3 +1099,159 @@ function initApp() {
 
   console.log('%c🛒 Canocchi POS — Sistema iniciado', 'color:#1a56e8;font-weight:bold;font-size:14px');
 }
+
+// ════════════════════════════════════════════════════
+//   IMPORT FROM EXCEL
+// ════════════════════════════════════════════════════
+
+let importRows = []; // parsed & validated rows ready to upload
+
+// Trigger file picker when import button is clicked
+document.getElementById('btnImportExcel').addEventListener('click', () => {
+  importRows = [];
+  document.getElementById('importPreviewWrap').classList.add('hidden');
+  document.getElementById('importFileName').classList.add('hidden');
+  document.getElementById('importErrorMsg').classList.add('hidden');
+  document.getElementById('btnConfirmImport').disabled = true;
+  document.getElementById('importProgress').textContent = '';
+  document.getElementById('importExcelInput').value = '';
+  openModal('modalImport');
+});
+
+document.getElementById('closeModalImport').addEventListener('click', () => closeModal('modalImport'));
+document.getElementById('btnCancelImport').addEventListener('click', () => closeModal('modalImport'));
+
+// Parse the file when user selects it
+document.getElementById('importExcelInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  document.getElementById('importFileNameText').textContent = file.name;
+  document.getElementById('importFileName').classList.remove('hidden');
+  document.getElementById('importErrorMsg').classList.add('hidden');
+  document.getElementById('btnConfirmImport').disabled = true;
+  importRows = [];
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const wb   = XLSX.read(ev.target.result, { type: 'binary' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+      if (!data.length) throw new Error('El archivo está vacío.');
+
+      // Required columns
+      const required = ['Código de Barras', 'Nombre', 'Precio ($)', 'Stock'];
+      const headers  = Object.keys(data[0]);
+      const missing  = required.filter(c => !headers.includes(c));
+      if (missing.length) throw new Error(`Columnas faltantes: ${missing.join(', ')}`);
+
+      // Validate & build rows
+      const errors = [];
+      importRows = [];
+
+      data.forEach((row, i) => {
+        const barcode = String(row['Código de Barras']).trim();
+        const name    = String(row['Nombre']).trim();
+        const price   = parseFloat(row['Precio ($)']);
+        const stock   = parseInt(row['Stock']);
+
+        if (!barcode || !name)         { errors.push(`Fila ${i+2}: código o nombre vacío`); return; }
+        if (isNaN(price) || price < 0) { errors.push(`Fila ${i+2}: precio inválido`); return; }
+        if (isNaN(stock) || stock < 0) { errors.push(`Fila ${i+2}: stock inválido`); return; }
+
+        importRows.push({
+          barcode,
+          name,
+          section: String(row['Sección'] || '').trim(),
+          brand:   String(row['Marca']   || '').trim(),
+          price,
+          stock,
+        });
+      });
+
+      if (errors.length) {
+        const errEl = document.getElementById('importErrorMsg');
+        errEl.textContent = errors.slice(0, 5).join(' | ') + (errors.length > 5 ? ` … y ${errors.length - 5} más` : '');
+        errEl.classList.remove('hidden');
+      }
+
+      // Show preview table
+      const tbody = document.getElementById('importPreviewBody');
+      tbody.innerHTML = importRows.slice(0, 50).map(r => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-3 py-1.5 font-mono text-gray-500">${r.barcode}</td>
+          <td class="px-3 py-1.5 text-gray-800 font-medium">${r.name}</td>
+          <td class="px-3 py-1.5 text-right font-mono text-brand-600">${fmt(r.price)}</td>
+          <td class="px-3 py-1.5 text-right font-mono ${r.stock <= 0 ? 'text-red-500' : r.stock < 5 ? 'text-yellow-600' : 'text-green-600'}">${r.stock}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('importPreviewCount').textContent =
+        `${importRows.length} producto${importRows.length !== 1 ? 's' : ''} listos para importar` +
+        (importRows.length > 50 ? ' (mostrando los primeros 50)' : '');
+
+      document.getElementById('importPreviewWrap').classList.remove('hidden');
+      document.getElementById('btnConfirmImport').disabled = importRows.length === 0;
+
+    } catch (err) {
+      const errEl = document.getElementById('importErrorMsg');
+      errEl.textContent = `❌ ${err.message}`;
+      errEl.classList.remove('hidden');
+      document.getElementById('importPreviewWrap').classList.add('hidden');
+    }
+  };
+  reader.readAsBinaryString(file);
+});
+
+// Upload to Firestore in batches of 400 (Firestore max batch = 500)
+document.getElementById('btnConfirmImport').addEventListener('click', async () => {
+  if (!importRows.length) return;
+
+  const btn      = document.getElementById('btnConfirmImport');
+  const progress = document.getElementById('importProgress');
+  btn.disabled   = true;
+  btn.textContent = '⏳ Subiendo...';
+
+  try {
+    const { writeBatch } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+
+    const BATCH_SIZE = 400;
+    let uploaded = 0;
+
+    for (let i = 0; i < importRows.length; i += BATCH_SIZE) {
+      const chunk = importRows.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+
+      chunk.forEach(r => {
+        const ref = doc(db, 'productos', r.barcode);
+        batch.set(ref, {
+          name:      r.name,
+          section:   r.section,
+          brand:     r.brand,
+          price:     r.price,
+          stock:     r.stock,
+          barcode:   r.barcode,
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      });
+
+      await batch.commit();
+      uploaded += chunk.length;
+      progress.textContent = `Subiendo… ${uploaded} / ${importRows.length}`;
+    }
+
+    progress.textContent = `✅ ${uploaded} productos importados correctamente`;
+    toast(`${uploaded} productos importados`, 'success');
+    loadStockList();
+
+    setTimeout(() => closeModal('modalImport'), 2000);
+
+  } catch (err) {
+    progress.textContent = `❌ Error: ${err.message}`;
+    toast(`Error al importar: ${err.message}`, 'error');
+    btn.disabled = false;
+    btn.textContent = '💾 SUBIR A FIRESTORE';
+  }
+});
