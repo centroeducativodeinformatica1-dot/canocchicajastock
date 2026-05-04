@@ -152,28 +152,74 @@ document.querySelectorAll('.nav-btn, .mob-nav').forEach(btn => {
 //   SCANNER (html5-qrcode)
 // ════════════════════════════════════════════════════
 
+// ── Libera cualquier stream de cámara activo en el navegador ──────────────
+async function forceReleaseCamera() {
+  try {
+    // Pedimos un stream temporal solo para "tomar" la cámara y soltarla limpia
+    const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    tempStream.getTracks().forEach(t => t.stop());
+    await new Promise(r => setTimeout(r, 300)); // pequeño delay para que el OS la libere
+  } catch (_) {
+    // Si falla (ej: ya libre) no importa, seguimos igual
+  }
+}
+
 async function startScanner() {
   if (scannerActive) return;
-  try {
-    html5QrCode = new Html5Qrcode("qr-reader");
-    const cameras = await Html5Qrcode.getCameras();
-    if (!cameras.length) { toast('No se encontró cámara', 'error'); return; }
 
-    // Prefer rear camera
-    const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
+  const statusEl  = document.getElementById('scanStatus');
+  const MAX_TRIES = 3;
 
-    await html5QrCode.start(
-      cam.id,
-      { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.5 },
-      onScanSuccess,
-      () => {}  // silence errors
-    );
-    scannerActive = true;
-    document.getElementById('btnStartScan').classList.add('hidden');
-    document.getElementById('btnStopScan').classList.remove('hidden');
-    document.getElementById('scanStatus').textContent = '📡 Escáner activo — apuntá al código';
-  } catch (e) {
-    toast(`Error de cámara: ${e.message || e}`, 'error');
+  for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
+    try {
+      // Intento 2+ → forzar liberación primero
+      if (attempt > 1) {
+        statusEl.textContent = `🔄 Reintentando (${attempt}/${MAX_TRIES})…`;
+        await forceReleaseCamera();
+        await new Promise(r => setTimeout(r, 600 * attempt)); // backoff: 1.2s, 1.8s
+        // Limpiar instancia anterior si quedó colgada
+        if (html5QrCode) {
+          try { await html5QrCode.stop(); html5QrCode.clear(); } catch (_) {}
+          html5QrCode = null;
+        }
+      }
+
+      html5QrCode = new Html5Qrcode("qr-reader");
+      const cameras = await Html5Qrcode.getCameras();
+      if (!cameras.length) { toast('No se encontró cámara', 'error'); return; }
+
+      // Prefer rear camera
+      const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
+
+      await html5QrCode.start(
+        cam.id,
+        { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.5 },
+        onScanSuccess,
+        () => {}  // silence errors
+      );
+      scannerActive = true;
+      document.getElementById('btnStartScan').classList.add('hidden');
+      document.getElementById('btnStopScan').classList.remove('hidden');
+      statusEl.textContent = '📡 Escáner activo — apuntá al código';
+      return; // éxito, salimos del loop
+
+    } catch (e) {
+      const isNotReadable = e.name === 'NotReadableError' || /not readable|video source/i.test(e.message);
+
+      if (isNotReadable && attempt < MAX_TRIES) {
+        // Cámara ocupada por otra app → reintentamos
+        console.warn(`[Scanner] Intento ${attempt} fallido (NotReadableError). Reintentando...`);
+        continue;
+      }
+
+      // Último intento o error distinto → mostramos mensaje útil
+      const msg = isNotReadable
+        ? `Cámara en uso por otra app. Cerrá Teams/Zoom y volvé a intentar.`
+        : (e.message || String(e));
+      toast(`Error de cámara: ${msg}`, 'error');
+      statusEl.textContent = '';
+      return;
+    }
   }
 }
 
@@ -1042,33 +1088,62 @@ document.getElementById('btnExportExcel').addEventListener('click', exportStockT
 
 async function startStockScanner() {
   if (stockScannerActive) return;
-  const wrap = document.getElementById('stock-qr-reader-wrap');
+  const wrap     = document.getElementById('stock-qr-reader-wrap');
   const statusEl = document.getElementById('stockScanStatus');
-  try {
-    stockHtml5QrCode = new Html5Qrcode('stock-qr-reader');
-    const cameras = await Html5Qrcode.getCameras();
-    if (!cameras.length) { toast('No se encontró cámara', 'error'); return; }
+  const MAX_TRIES = 3;
 
-    const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
+  for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
+    try {
+      // Intento 2+ → forzar liberación primero
+      if (attempt > 1) {
+        statusEl.textContent = `🔄 Reintentando (${attempt}/${MAX_TRIES})…`;
+        wrap.classList.remove('hidden');
+        await forceReleaseCamera();
+        await new Promise(r => setTimeout(r, 600 * attempt));
+        if (stockHtml5QrCode) {
+          try { await stockHtml5QrCode.stop(); stockHtml5QrCode.clear(); } catch (_) {}
+          stockHtml5QrCode = null;
+        }
+      }
 
-    wrap.classList.remove('hidden');
-    await stockHtml5QrCode.start(
-      cam.id,
-      { fps: 10, qrbox: { width: 220, height: 120 }, aspectRatio: 1.5 },
-      (code) => {
-        if (!code) return;
-        document.getElementById('prodBarcode').value = code;
-        statusEl.textContent = `✅ Código: ${code}`;
-        stopStockScanner();
-        setTimeout(() => document.getElementById('prodName').focus(), 200);
-      },
-      () => {}
-    );
-    stockScannerActive = true;
-    statusEl.textContent = '📡 Escáner activo — apuntá al código';
-  } catch (e) {
-    wrap.classList.add('hidden');
-    toast(`Error de cámara: ${e.message || e}`, 'error');
+      stockHtml5QrCode = new Html5Qrcode('stock-qr-reader');
+      const cameras = await Html5Qrcode.getCameras();
+      if (!cameras.length) { toast('No se encontró cámara', 'error'); return; }
+
+      const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
+
+      wrap.classList.remove('hidden');
+      await stockHtml5QrCode.start(
+        cam.id,
+        { fps: 10, qrbox: { width: 220, height: 120 }, aspectRatio: 1.5 },
+        (code) => {
+          if (!code) return;
+          document.getElementById('prodBarcode').value = code;
+          statusEl.textContent = `✅ Código: ${code}`;
+          stopStockScanner();
+          setTimeout(() => document.getElementById('prodName').focus(), 200);
+        },
+        () => {}
+      );
+      stockScannerActive = true;
+      statusEl.textContent = '📡 Escáner activo — apuntá al código';
+      return; // éxito
+
+    } catch (e) {
+      const isNotReadable = e.name === 'NotReadableError' || /not readable|video source/i.test(e.message);
+
+      if (isNotReadable && attempt < MAX_TRIES) {
+        console.warn(`[StockScanner] Intento ${attempt} fallido (NotReadableError). Reintentando...`);
+        continue;
+      }
+
+      wrap.classList.add('hidden');
+      const msg = isNotReadable
+        ? `Cámara en uso por otra app. Cerrá Teams/Zoom y volvé a intentar.`
+        : (e.message || String(e));
+      toast(`Error de cámara: ${msg}`, 'error');
+      return;
+    }
   }
 }
 
